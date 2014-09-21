@@ -25,14 +25,14 @@ atlas.mappings(
 )
 
 kafka_secgrp = template.add_parameter(Parameter(
-	"Kafa Security Group ID",
+	"SecgrpId",
 	Description="Kafa Security Group ID",
 	Type="String",
 ))
 
 template.add_resource(ec2.SecurityGroupIngress(
     "Consumers",
-    GroupId=kafka_secgrp,
+    GroupId=Ref(kafka_secgrp),
     CidrIp="0.0.0.0/0",  ##TODO: open 6667 for consumers only.
     FromPort="6667",
     ToPort="6667",
