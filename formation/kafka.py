@@ -24,20 +24,19 @@ atlas.mappings(
     accounts=[atlas.poundpay],
 )
 
-kafka_secgrp = template.add_parameter(Parameter(
-	"SecgrpId",
-	Description="Kafa Security Group ID",
-	Type="String",
-))
-
-template.add_resource(ec2.SecurityGroupIngress(
-    "Consumers",
-    GroupId=Ref(kafka_secgrp),
-    CidrIp="0.0.0.0/0",  ##TODO: open 6667 for consumers only.
-    FromPort="6667",
-    ToPort="6667",
-    IpProtocol="tcp",
-))
+kafka_secgrp = atlas.instance_secgrp(
+	template,
+	name="Kafka",
+    SecurityGroupIngress=[
+        ec2.SecurityGroupRule(
+            'Consumers',
+            IpProtocol='tcp',
+            FromPort='6667',
+            ToPort='6667',
+            CidrIp=atlas.vpc_cidr,  ##TODO: open 6667 for consumers only.
+        ),
+    ]
+)
 
 i_meta_data = {}
 atlas.cfn_auth_metadata(i_meta_data)
