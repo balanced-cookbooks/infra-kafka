@@ -1,0 +1,25 @@
+---
+
+- hosts: kafka*
+  sudo: yes
+  pre_tasks:
+    - lineinfile: dest=/etc/hosts state=absent regexp="^127.0.1.1" #If found, kafka binds to localhost address
+
+- hosts: kafka1*
+  vars:
+    kafka_server_broker_id: 1
+  roles:
+    - ansible-kafka
+
+- hosts: kafka2*
+  vars:
+    kafka_server_broker_id: 2
+  roles:
+    - ansible-kafka
+
+- hosts: kafka3*
+  vars:
+    kafka_server_broker_id: 3
+  roles:
+    - ansible-kafka
+

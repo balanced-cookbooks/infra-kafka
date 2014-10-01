@@ -1,0 +1,6 @@
+---
+  java_versions: oracle-jdk7-installer
+  kafka_server_zookeeper_connect:
+    - zk1.vm:2181
+    - zk2.vm:2181
+    - zk3.vm:2181
