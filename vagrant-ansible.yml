@@ -11,7 +11,7 @@
     kafka_server_zookeeper_connect:
       - zk1:2181
   roles:
-    - ansible-kafka
+    - kafka
 
 - hosts: kafka2*
   vars:
@@ -19,7 +19,7 @@
     kafka_server_zookeeper_connect:
       - zk1:2181
   roles:
-    - ansible-kafka
+    - kafka
 
 - hosts: kafka3*
   vars:
@@ -27,4 +27,4 @@
     kafka_server_zookeeper_connect:
       - zk1:2181
   roles:
-    - ansible-kafka
+    - kafka
