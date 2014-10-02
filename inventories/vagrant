@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+import json
+import kazoo
+from kazoo.client import KazooClient
+
+
+# this is the zk1 host from vagrant
+zk = KazooClient(hosts='127.0.0.1:2181')
+zk.start()
+
+BASE_PATH = '/kafka-cluster/foo'
+NODES = ['kafka1', 'kafka2', 'kafka3']
+
+
+def get_node_indices(nodes):
+    missing_nodes = []
+    node_indices = {}
+
+    for index, node in enumerate(nodes):
+        node_path = '/'.join([BASE_PATH, 'nodes', node])
+        try:
+            node_index, _ = zk.get(node_path)
+        except kazoo.exceptions.NoNodeError:
+            # we need to assign this node an index
+            missing_nodes.append(node)
+        else:
+            node_index = int(node_index)
+            node_indices[node] = node_index
+
+    return node_indices, missing_nodes
+
+
+def assign_indices_to_missing_nodes(missing_nodes):
+    max_node_path = '/'.join([BASE_PATH, 'max'])
+    zk.ensure_path(max_node_path)
+    # give each missing node an index based on the previous max index
+    for index, node in enumerate(missing_nodes):
+        starting_index, meta = zk.get(max_node_path)
+        starting_index = starting_index
+        if not starting_index:
+            node_index = '1'
+        else:
+            node_index = str(int(starting_index) + 1)
+        node_path = '/'.join([BASE_PATH, 'nodes', node])
+        index_path = '/'.join([BASE_PATH, 'indices', node_index])
+
+        transaction = zk.transaction()
+        transaction.create(node_path, node_index)
+        transaction.create(index_path, node)
+        transaction.check(max_node_path, version=meta.version)
+        transaction.set_data(max_node_path, node_index)
+        transaction.commit()
+
+
+def node_indices(nodes):
+    zk.ensure_path(BASE_PATH)
+    zk.ensure_path('/'.join([BASE_PATH, 'nodes']))
+    zk.ensure_path('/'.join([BASE_PATH, 'indices']))
+
+    node_indices, missing_nodes = get_node_indices(nodes)
+
+    if missing_nodes:
+        assign_indices_to_missing_nodes(missing_nodes)
+
+        node_indices, missing_nodes = get_node_indices(nodes)
+
+    assert not missing_nodes
+
+    return dict(
+        (host, {'kafka_server_broker_id': index})
+        for host, index in node_indices.iteritems()
+    )
+
+
+if __name__ == '__main__':
+    data = node_indices(NODES)
+
+    result = {
+        '_meta': {
+            'hostvars': data
+        }
+    }
+    print json.dumps(result, indent=4, sort_keys=True)
